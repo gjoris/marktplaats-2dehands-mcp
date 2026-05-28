@@ -416,6 +416,10 @@ class TestListCategories:
         assert len(result["subcategories"]) >= 10
         assert all("id" in c for c in result["main_categories"])
 
+    def test_unknown_site_error(self):
+        result = server.list_categories(site="ebay")
+        assert "error" in result
+
 
 class TestGetCategoryFilters:
     def test_unknown_site(self):

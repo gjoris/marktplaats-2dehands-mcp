@@ -9,6 +9,30 @@ from typing import Any
 import pytest
 import responses
 
+from marktplaats_2dehands_mcp import categories, category_fetcher
+
+
+@pytest.fixture(autouse=True)
+def _isolated_category_cache(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep tests off the real category cache and out of HTTP for category lookups.
+
+    Tests that exercise the fetcher directly pass an explicit `cache_dir` so
+    they bypass this stub.
+    """
+    cache_dir = tmp_path_factory.mktemp("category_cache")
+    monkeypatch.setattr(category_fetcher, "DEFAULT_CACHE_DIR", cache_dir)
+
+    def _stub(site: str, **_kwargs: Any) -> dict[str, Any]:
+        return {
+            "l1": dict(categories.L1_CATEGORIES),
+            "l2": {n: dict(i) for n, i in categories.L2_CATEGORIES.items()},
+        }
+
+    monkeypatch.setattr("marktplaats_2dehands_mcp.api.get_categories", _stub)
+    monkeypatch.setattr("marktplaats_2dehands_mcp.server.get_categories", _stub)
+
 
 @pytest.fixture
 def state_path(tmp_path: Path) -> Path:
