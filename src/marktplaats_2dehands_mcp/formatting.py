@@ -40,6 +40,17 @@ CONDITION_MAP = {
     "not_working": Condition.NOT_WORKING.value,
 }
 
+# The listing API only exposes a localized label in attributes[].value (e.g.
+# "Nieuw", "Gebruikt"); attributeValueKey is not returned for listings (only
+# in facets). Mapping the Dutch labels gives a stable English key.
+CONDITION_LABEL_TO_KEY = {
+    "Nieuw": "new",
+    "Zo goed als nieuw": "as_good_as_new",
+    "Gebruikt": "used",
+    "Refurbished": "refurbished",
+    "Niet werkend": "not_working",
+}
+
 
 def parse_price(price_type: str, price_cents: int) -> str:
     price_map = {
@@ -82,16 +93,19 @@ def format_listing(listing: dict, listing_link: str) -> dict:
     description = listing.get("description", "") or ""
     title = listing.get("title", "")
 
+    condition_label = next(
+        (a.get("value") for a in listing.get("attributes", []) if a.get("key") == "condition"),
+        None,
+    )
+    condition = CONDITION_LABEL_TO_KEY.get(condition_label) if condition_label else None
+
     return {
         "id": listing.get("itemId"),
         "title": title,
         "description": description[:200] + "..." if len(description) > 200 else description,
         "price": parse_price(price_info.get("priceType", ""), price_info.get("priceCents", 0)),
         "price_cents": price_info.get("priceCents", 0),
-        "condition": next(
-            (a.get("value") for a in listing.get("attributes", []) if a.get("key") == "condition"),
-            None,
-        ),
+        "condition": condition,
         "location": {"city": location.get("cityName"), "distance_km": distance_km},
         "seller": {
             "id": seller.get("sellerId"),
