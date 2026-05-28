@@ -1,8 +1,11 @@
 """MCP server exposing tools for marktplaats.nl and 2dehands.be."""
 
+import json
+import re
 from typing import Any
 
 import requests
+from bs4 import BeautifulSoup
 from mcp.server.fastmcp import FastMCP
 
 from . import saved_searches as ss
@@ -132,11 +135,6 @@ def get_listing_details(listing_id: str, site: str = "marktplaats") -> dict[str,
     if not listing_id.startswith("m"):
         listing_id = f"m{listing_id}"
 
-    import json as _json
-    import re
-
-    from bs4 import BeautifulSoup
-
     headers = {**REQUEST_HEADERS, "Accept": "text/html,application/xhtml+xml"}
     try:
         response = requests.get(
@@ -157,7 +155,7 @@ def get_listing_details(listing_id: str, site: str = "marktplaats") -> dict[str,
 
     for script in soup.find_all("script", type="application/ld+json"):
         try:
-            data = _json.loads(script.string or "")
+            data = json.loads(script.string or "")
             if isinstance(data, dict) and data.get("@type") == "Product":
                 result["title"] = data.get("name")
                 result["description_short"] = data.get("description")
@@ -171,7 +169,7 @@ def get_listing_details(listing_id: str, site: str = "marktplaats") -> dict[str,
                     img if img.startswith("http") else "https:" + img for img in images
                 ]
                 result["image_count"] = len(images)
-        except (_json.JSONDecodeError, TypeError, ValueError):
+        except (json.JSONDecodeError, TypeError, ValueError):
             pass
 
     text = soup.get_text(separator="|||")
