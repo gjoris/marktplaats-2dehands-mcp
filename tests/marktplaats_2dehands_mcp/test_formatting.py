@@ -30,28 +30,9 @@ class TestDetectSellerType:
         assert formatting.detect_seller_type(["VERIFIED_SELLER"]) == "business"
         assert formatting.detect_seller_type(["SHOPPING_CART", "OTHER"]) == "business"
 
-    def test_business_via_name_pattern(self):
-        assert formatting.detect_seller_type([], "MyShop Webshop") == "business"
-        assert formatting.detect_seller_type([], "Acme B.V.") == "business"
-        assert formatting.detect_seller_type([], "example.nl") == "business"
-        assert formatting.detect_seller_type([], "example.com") == "business"
-        assert formatting.detect_seller_type([], "example.be") == "business"
-        assert formatting.detect_seller_type([], "Used Products") == "business"
-        assert formatting.detect_seller_type([], "Buy & Sell Co") == "business"
-        assert formatting.detect_seller_type([], "Mediahoek") == "business"
-        assert formatting.detect_seller_type([], "IT-Resale") == "business"
-        assert formatting.detect_seller_type([], "Acme Handel") == "business"
-        assert formatting.detect_seller_type([], "Best Electronics") == "business"
-        assert formatting.detect_seller_type([], "Refurbished Pro") == "business"
-        assert formatting.detect_seller_type([], "Phone Outlet") == "business"
-        assert formatting.detect_seller_type([], "Cool Store") == "business"
-
     def test_private_default(self):
         assert formatting.detect_seller_type([]) == "private"
-        assert formatting.detect_seller_type([], "Jan Jansen") == "private"
-
-    def test_traits_take_precedence(self):
-        assert formatting.detect_seller_type(["VERIFIED_SELLER"], "Jan Jansen") == "business"
+        assert formatting.detect_seller_type(["OTHER"]) == "private"
 
 
 class TestFormatListing:
