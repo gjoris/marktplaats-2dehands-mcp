@@ -90,6 +90,12 @@ detected rate limiting. No headless browser, proxy, or stealth library is
 needed. If that changes, the entry points to swap are in
 `marktplaats_2dehands_mcp/api.py`.
 
+`get_listing_details` does not have a public JSON endpoint, but each listing
+page is server-rendered with the full structured payload assigned to
+`window.__CONFIG__`. The fetcher in
+`marktplaats_2dehands_mcp/listing.py` extracts that JSON object, which is
+substantially more robust than scraping the rendered Dutch UI text.
+
 ## Attribution
 
 This project's listing-formatting helpers (price/condition/seller-type
