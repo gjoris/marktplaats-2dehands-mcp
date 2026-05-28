@@ -96,6 +96,11 @@ page is server-rendered with the full structured payload assigned to
 `marktplaats_2dehands_mcp/listing.py` extracts that JSON object, which is
 substantially more robust than scraping the rendered Dutch UI text.
 
+## Tests
+
+- `tests/` — unit tests with mocked HTTP. Run with `pytest tests/`. CI gate: 100% line + branch coverage on the Python 3.10–3.13 matrix.
+- `e2e/` — end-to-end tests against the live marktplaats.nl and 2dehands.be backends. Run with `pytest e2e/ --no-cov`. The `e2e` GitHub Actions workflow runs them daily and on `workflow_dispatch`; failures open an issue but do not block PR merges. Includes a meta-test enforcing 100% functional coverage (every MCP tool exercised against every site).
+
 ## Attribution
 
 This project's listing-formatting helpers (price/condition/seller-type
