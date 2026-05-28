@@ -302,7 +302,10 @@ def get_category_filters(
             return {"error": f"Unknown subcategory: {subcategory}"}
         params["l2CategoryId"] = str(L2_CATEGORIES[sub]["id"])
         params["l1CategoryId"] = str(L2_CATEGORIES[sub]["parent"])
-    elif category:
+    else:
+        # Both-None already returned above; subcategory is falsy here, so
+        # category must be truthy.
+        assert category is not None
         cat = category.lower()
         if cat not in L1_CATEGORIES:
             return {"error": f"Unknown category: {category}"}
