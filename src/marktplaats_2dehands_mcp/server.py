@@ -8,33 +8,25 @@ from mcp.server.fastmcp import FastMCP
 from . import saved_searches as ss
 from .api import REQUEST_HEADERS, REQUEST_TIMEOUT, SearchError, build_search_params, search
 from .categories import L1_CATEGORIES, L2_CATEGORIES
-from .formatting import format_listing, format_listing_compact
+from .formatting import format_listing
 from .sites import SITES, listing_url, seller_url
 
 mcp = FastMCP("marktplaats-2dehands")
 
 
-def _make_listings(site: str, raw_listings: list[dict], compact: bool) -> list[dict]:
-    if compact:
-        return [format_listing_compact(l) for l in raw_listings]
+def _make_listings(site: str, raw_listings: list[dict]) -> list[dict]:
     return [
         format_listing(l, listing_url(site, l.get("itemId", "")))
         for l in raw_listings
     ]
 
 
-def _filter_by_seller_type(listings: list[dict], seller_type: str, compact: bool) -> list[dict]:
+def _filter_by_seller_type(listings: list[dict], seller_type: str) -> list[dict]:
     st = seller_type.lower()
-    if compact:
-        if st in ("business", "zakelijk"):
-            return [l for l in listings if l["seller"] == "B"]
-        if st in ("private", "particulier"):
-            return [l for l in listings if l["seller"] == "P"]
-    else:
-        if st in ("business", "zakelijk"):
-            return [l for l in listings if l["seller"]["type"] == "business"]
-        if st in ("private", "particulier"):
-            return [l for l in listings if l["seller"]["type"] == "private"]
+    if st in ("business", "zakelijk"):
+        return [l for l in listings if l["seller"]["type"] == "business"]
+    if st in ("private", "particulier"):
+        return [l for l in listings if l["seller"]["type"] == "private"]
     return listings
 
 
@@ -56,7 +48,6 @@ def search_listings(
     offset: int = 0,
     offered_since_days: int | None = None,
     attribute_ids: list[int] | None = None,
-    compact: bool = False,
 ) -> dict[str, Any]:
     """Search for listings on marktplaats.nl or 2dehands.be.
 
@@ -76,7 +67,6 @@ def search_listings(
         offset: Pagination offset.
         offered_since_days: Only show items posted within the last N days.
         attribute_ids: Category-specific filter IDs (use get_category_filters).
-        compact: Return minimal format (~75% smaller). B=business, P=private.
 
     Returns:
         Dict with total_count, returned_count, listings, optional next_offset.
@@ -107,19 +97,13 @@ def search_listings(
     except SearchError as e:
         return {"error": str(e)}
 
-    listings = _make_listings(site, data.get("listings", []), compact)
+    listings = _make_listings(site, data.get("listings", []))
     if seller_type:
-        listings = _filter_by_seller_type(listings, seller_type, compact)
+        listings = _filter_by_seller_type(listings, seller_type)
 
     total_count = data.get("totalResultCount", 0)
 
-    if compact:
-        result: dict[str, Any] = {"site": site, "total": total_count, "listings": listings}
-        if offset + len(listings) < total_count:
-            result["next"] = offset + len(listings)
-        return result
-
-    result = {
+    result: dict[str, Any] = {
         "site": site,
         "total_count": total_count,
         "returned_count": len(listings),
@@ -419,9 +403,9 @@ def check_saved_search(name: str, mark_seen: bool = True) -> dict[str, Any]:
     raw_listings = data.get("listings", [])
     new_raw = [l for l in raw_listings if l.get("itemId") not in seen_ids]
 
-    new_listings = _make_listings(site, new_raw, compact=False)
+    new_listings = _make_listings(site, new_raw)
     if params.get("seller_type"):
-        new_listings = _filter_by_seller_type(new_listings, params["seller_type"], compact=False)
+        new_listings = _filter_by_seller_type(new_listings, params["seller_type"])
 
     if mark_seen:
         ss.record_check(name, [l.get("itemId") for l in raw_listings if l.get("itemId")])
