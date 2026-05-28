@@ -45,11 +45,31 @@ class TestFormatListing:
         assert result["title"] == "Test item"
         assert result["price"] == "€ 10.00"
         assert result["price_cents"] == 1000
-        assert result["condition"] == "Gebruikt"
+        assert result["condition"] == "used"
         assert result["location"] == {"city": "Amsterdam", "distance_km": 5.0}
         assert result["seller"]["type"] == "private"
         assert result["image"] == "https://example.com/img.jpg"
         assert result["link"] == "https://link.example/m1"
+
+    @pytest.mark.parametrize(
+        "label,expected",
+        [
+            ("Nieuw", "new"),
+            ("Zo goed als nieuw", "as_good_as_new"),
+            ("Gebruikt", "used"),
+            ("Refurbished", "refurbished"),
+            ("Niet werkend", "not_working"),
+        ],
+    )
+    def test_condition_labels_mapped(self, listing_factory, label, expected):
+        listing = listing_factory(attributes=[{"key": "condition", "value": label}])
+        result = formatting.format_listing(listing, "")
+        assert result["condition"] == expected
+
+    def test_unknown_condition_label_returns_none(self, listing_factory):
+        listing = listing_factory(attributes=[{"key": "condition", "value": "Onbekend"}])
+        result = formatting.format_listing(listing, "")
+        assert result["condition"] is None
 
     def test_long_description_truncated(self, listing_factory):
         listing = listing_factory(description="x" * 250)
