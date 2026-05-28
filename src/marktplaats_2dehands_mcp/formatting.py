@@ -1,6 +1,5 @@
 """Helpers for parsing and formatting Adevinta listing API responses."""
 
-import re
 from enum import Enum
 
 BUSINESS_TRAITS = {
@@ -11,24 +10,6 @@ BUSINESS_TRAITS = {
     "UNIQUE_SELLING_POINTS",
     "SHOPPING_CART",
 }
-
-BUSINESS_NAME_PATTERNS = [
-    r"used products",
-    r"buy\s*&?\s*sell",
-    r"mediahoek",
-    r"it[- ]?resale",
-    r"\.nl$",
-    r"\.com$",
-    r"\.be$",
-    r"b\.?v\.?$",
-    r"webshop",
-    r"shop\b",
-    r"store\b",
-    r"handel",
-    r"electronics",
-    r"refurbished",
-    r"outlet",
-]
 
 
 class SortBy(str, Enum):
@@ -75,14 +56,9 @@ def parse_price(price_type: str, price_cents: int) -> str:
     return price_map.get(price_type, f"€ {price_cents / 100:,.2f}")
 
 
-def detect_seller_type(traits: list[str], seller_name: str = "") -> str:
+def detect_seller_type(traits: list[str]) -> str:
     if set(traits) & BUSINESS_TRAITS:
         return "business"
-    if seller_name:
-        name_lower = seller_name.lower()
-        for pattern in BUSINESS_NAME_PATTERNS:
-            if re.search(pattern, name_lower):
-                return "business"
     return "private"
 
 
@@ -121,7 +97,7 @@ def format_listing(listing: dict, listing_link: str) -> dict:
             "id": seller.get("sellerId"),
             "name": seller_name,
             "is_verified": seller.get("isVerified", False),
-            "type": detect_seller_type(traits, seller_name),
+            "type": detect_seller_type(traits),
         },
         "date": listing.get("date"),
         "image": first_image,
