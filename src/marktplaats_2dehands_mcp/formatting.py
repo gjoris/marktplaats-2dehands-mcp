@@ -94,10 +94,10 @@ def format_date_short(date_str: str) -> str:
     date_lower = date_str.lower()
     if "vandaag" in date_lower:
         return "0d"
-    if "gisteren" in date_lower:
-        return "1d"
     if "eergisteren" in date_lower:
         return "2d"
+    if "gisteren" in date_lower:
+        return "1d"
 
     month_map = {
         "jan": 1, "feb": 2, "mrt": 3, "apr": 4, "mei": 5, "jun": 6,
