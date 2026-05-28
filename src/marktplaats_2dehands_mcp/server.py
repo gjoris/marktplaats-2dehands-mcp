@@ -1,40 +1,35 @@
 """MCP server exposing tools for marktplaats.nl and 2dehands.be."""
 
+import json
+import re
 from typing import Any
 
 import requests
+from bs4 import BeautifulSoup
 from mcp.server.fastmcp import FastMCP
 
 from . import saved_searches as ss
 from .api import REQUEST_HEADERS, REQUEST_TIMEOUT, SearchError, build_search_params, search
 from .categories import L1_CATEGORIES, L2_CATEGORIES
-from .formatting import format_listing, format_listing_compact
+from .formatting import format_listing
 from .sites import SITES, listing_url, seller_url
 
 mcp = FastMCP("marktplaats-2dehands")
 
 
-def _make_listings(site: str, raw_listings: list[dict], compact: bool) -> list[dict]:
-    if compact:
-        return [format_listing_compact(l) for l in raw_listings]
+def _make_listings(site: str, raw_listings: list[dict]) -> list[dict]:
     return [
         format_listing(l, listing_url(site, l.get("itemId", "")))
         for l in raw_listings
     ]
 
 
-def _filter_by_seller_type(listings: list[dict], seller_type: str, compact: bool) -> list[dict]:
+def _filter_by_seller_type(listings: list[dict], seller_type: str) -> list[dict]:
     st = seller_type.lower()
-    if compact:
-        if st in ("business", "zakelijk"):
-            return [l for l in listings if l["seller"] == "B"]
-        if st in ("private", "particulier"):
-            return [l for l in listings if l["seller"] == "P"]
-    else:
-        if st in ("business", "zakelijk"):
-            return [l for l in listings if l["seller"]["type"] == "business"]
-        if st in ("private", "particulier"):
-            return [l for l in listings if l["seller"]["type"] == "private"]
+    if st in ("business", "zakelijk"):
+        return [l for l in listings if l["seller"]["type"] == "business"]
+    if st in ("private", "particulier"):
+        return [l for l in listings if l["seller"]["type"] == "private"]
     return listings
 
 
@@ -56,7 +51,6 @@ def search_listings(
     offset: int = 0,
     offered_since_days: int | None = None,
     attribute_ids: list[int] | None = None,
-    compact: bool = False,
 ) -> dict[str, Any]:
     """Search for listings on marktplaats.nl or 2dehands.be.
 
@@ -76,7 +70,6 @@ def search_listings(
         offset: Pagination offset.
         offered_since_days: Only show items posted within the last N days.
         attribute_ids: Category-specific filter IDs (use get_category_filters).
-        compact: Return minimal format (~75% smaller). B=business, P=private.
 
     Returns:
         Dict with total_count, returned_count, listings, optional next_offset.
@@ -107,19 +100,13 @@ def search_listings(
     except SearchError as e:
         return {"error": str(e)}
 
-    listings = _make_listings(site, data.get("listings", []), compact)
+    listings = _make_listings(site, data.get("listings", []))
     if seller_type:
-        listings = _filter_by_seller_type(listings, seller_type, compact)
+        listings = _filter_by_seller_type(listings, seller_type)
 
     total_count = data.get("totalResultCount", 0)
 
-    if compact:
-        result: dict[str, Any] = {"site": site, "total": total_count, "listings": listings}
-        if offset + len(listings) < total_count:
-            result["next"] = offset + len(listings)
-        return result
-
-    result = {
+    result: dict[str, Any] = {
         "site": site,
         "total_count": total_count,
         "returned_count": len(listings),
@@ -148,11 +135,6 @@ def get_listing_details(listing_id: str, site: str = "marktplaats") -> dict[str,
     if not listing_id.startswith("m"):
         listing_id = f"m{listing_id}"
 
-    import json as _json
-    import re
-
-    from bs4 import BeautifulSoup
-
     headers = {**REQUEST_HEADERS, "Accept": "text/html,application/xhtml+xml"}
     try:
         response = requests.get(
@@ -173,7 +155,7 @@ def get_listing_details(listing_id: str, site: str = "marktplaats") -> dict[str,
 
     for script in soup.find_all("script", type="application/ld+json"):
         try:
-            data = _json.loads(script.string or "")
+            data = json.loads(script.string or "")
             if isinstance(data, dict) and data.get("@type") == "Product":
                 result["title"] = data.get("name")
                 result["description_short"] = data.get("description")
@@ -187,7 +169,7 @@ def get_listing_details(listing_id: str, site: str = "marktplaats") -> dict[str,
                     img if img.startswith("http") else "https:" + img for img in images
                 ]
                 result["image_count"] = len(images)
-        except (_json.JSONDecodeError, TypeError, ValueError):
+        except (json.JSONDecodeError, TypeError, ValueError):
             pass
 
     text = soup.get_text(separator="|||")
@@ -385,7 +367,7 @@ def check_saved_search(name: str, mark_seen: bool = True) -> dict[str, Any]:
         return {"error": f"No saved search named {name!r}"}
 
     params = dict(entry["params"])
-    site = params.pop("site")
+    site = params.get("site")
     if site not in SITES:
         return {"error": f"Saved search has unknown site: {site!r}"}
 
@@ -394,42 +376,21 @@ def check_saved_search(name: str, mark_seen: bool = True) -> dict[str, Any]:
     params.setdefault("sort_by", "date")
     params.setdefault("sort_order", "desc")
 
-    try:
-        api_params = build_search_params(
-            query=params.get("query", ""),
-            category=params.get("category"),
-            subcategory=params.get("subcategory"),
-            zip_code=params.get("zip_code", ""),
-            distance_km=params.get("distance_km", 1000),
-            price_from=params.get("price_from"),
-            price_to=params.get("price_to"),
-            condition=params.get("condition"),
-            sort_by=params.get("sort_by", "date"),
-            sort_order=params.get("sort_order", "desc"),
-            limit=params.get("limit", 50),
-            offset=params.get("offset", 0),
-            offered_since_days=params.get("offered_since_days"),
-            attribute_ids=params.get("attribute_ids"),
-        )
-        data = search(site, api_params)
-    except SearchError as e:
-        return {"error": str(e)}
+    result = search_listings(**params)
+    if "error" in result:
+        return result
 
+    listings = result["listings"]
     seen_ids = set(entry.get("seen_ids", []))
-    raw_listings = data.get("listings", [])
-    new_raw = [l for l in raw_listings if l.get("itemId") not in seen_ids]
-
-    new_listings = _make_listings(site, new_raw, compact=False)
-    if params.get("seller_type"):
-        new_listings = _filter_by_seller_type(new_listings, params["seller_type"], compact=False)
+    new_listings = [l for l in listings if l.get("id") not in seen_ids]
 
     if mark_seen:
-        ss.record_check(name, [l.get("itemId") for l in raw_listings if l.get("itemId")])
+        ss.record_check(name, [l["id"] for l in listings if l.get("id")])
 
     return {
         "name": name,
         "site": site,
-        "checked_count": len(raw_listings),
+        "checked_count": len(listings),
         "new_count": len(new_listings),
         "new_listings": new_listings,
         "first_check": entry.get("last_checked_at") is None,

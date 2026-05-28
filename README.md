@@ -10,7 +10,7 @@ server covers both via a `site` parameter.
 
 | Tool | Description |
 | --- | --- |
-| `search_listings` | Keyword + filter search (price, distance, condition, category, seller type, …). Supports `compact` mode for ~75% smaller responses. |
+| `search_listings` | Keyword + filter search (price, distance, condition, category, seller type, …). |
 | `get_listing_details` | Full title, description, images, stats, location for one listing. |
 | `get_seller_info` | Ratings and verification status for a seller. |
 | `list_categories` | Available main categories and common subcategories (shared between both sites). |
@@ -62,7 +62,7 @@ then in your MCP config:
 
 ```text
 search_listings(site="2dehands", query="trek emonda", price_to=2000, zip_code="2000", distance_km=30)
-search_listings(site="marktplaats", subcategory="laptops", condition="as_good_as_new", compact=True)
+search_listings(site="marktplaats", subcategory="laptops", condition="as_good_as_new")
 get_listing_details(listing_id="m2404274827", site="marktplaats")
 
 # Monitor for new bikes:
@@ -87,7 +87,7 @@ needed. If that changes, the entry points to swap are in
 ## Attribution
 
 This project's listing-formatting helpers (price/condition/seller-type
-detection, compact response shape, JSON-LD parsing of detail pages) are
+detection, JSON-LD parsing of detail pages) are
 derived from
 [PonClick/marktplaats-mcp](https://github.com/PonClick/marktplaats-mcp)
 (MIT, © 2026 lessClick AI). Adapted to support both marktplaats.nl and
