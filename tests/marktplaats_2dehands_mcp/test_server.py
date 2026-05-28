@@ -515,3 +515,150 @@ class TestMain:
         monkeypatch.setattr(server.mcp, "run", lambda: called.append(True))
         server.main()
         assert called == [True]
+
+
+class TestAuthTools:
+    def test_auth_status_unknown_site(self):
+        result = server.auth_status(site="ebay")
+        assert "error" in result
+
+    def test_auth_status_authenticated(self, monkeypatch):
+        monkeypatch.setattr(server.auth_mod, "is_authenticated", lambda site: True)
+        assert server.auth_status("marktplaats") == {
+            "authenticated": True,
+            "site": "marktplaats",
+        }
+
+    def test_auth_status_unauthenticated(self, monkeypatch):
+        monkeypatch.setattr(server.auth_mod, "is_authenticated", lambda site: False)
+        assert server.auth_status("marktplaats")["authenticated"] is False
+
+    def test_auth_setup_unknown_site(self):
+        result = server.auth_setup(site="ebay")
+        assert "error" in result
+
+    def test_auth_setup_no_extra(self, monkeypatch):
+        def fake_run(site):
+            raise ImportError("Playwright is required")
+
+        monkeypatch.setattr(server.auth_mod, "run_login_flow", fake_run)
+        result = server.auth_setup("marktplaats")
+        assert "error" in result
+        assert result["needs_auth_extra"] is True
+
+    def test_auth_setup_timeout(self, monkeypatch):
+        def fake_run(site):
+            raise TimeoutError("Login flow exceeded 15-minute window")
+
+        monkeypatch.setattr(server.auth_mod, "run_login_flow", fake_run)
+        result = server.auth_setup("marktplaats")
+        assert "error" in result
+        assert "needs_auth_extra" not in result
+
+    def test_auth_setup_success(self, monkeypatch, tmp_path):
+        path = tmp_path / "state.json"
+        path.write_text("{}")
+        monkeypatch.setattr(server.auth_mod, "run_login_flow", lambda site: path)
+        result = server.auth_setup("marktplaats")
+        assert result["authenticated"] is True
+        assert result["storage_state_path"] == str(path)
+
+    def test_auth_logout_unknown_site(self):
+        assert "error" in server.auth_logout(site="ebay")
+
+    def test_auth_logout_removes(self, monkeypatch):
+        monkeypatch.setattr(server.auth_mod, "clear_session", lambda site: True)
+        assert server.auth_logout("marktplaats") == {
+            "site": "marktplaats",
+            "removed": True,
+        }
+
+
+class TestAuthenticatedDataTools:
+    def _patch_account(self, monkeypatch, fn_name, return_value=None, raise_exc=None):
+        def fake(*args, **kwargs):
+            if raise_exc is not None:
+                raise raise_exc
+            return return_value
+
+        monkeypatch.setattr(server, fn_name, fake)
+
+    def test_unknown_site_short_circuit(self):
+        for fn in [
+            server.get_unread_counts,
+            server.list_my_messages,
+            server.list_my_listings,
+            server.list_my_favorites,
+            server.list_my_bids,
+            server.list_native_saved_searches,
+        ]:
+            assert "error" in fn(site="ebay")
+
+    def test_get_unread_counts_success(self, monkeypatch):
+        self._patch_account(monkeypatch, "_get_unread_counts",
+                            {"unread_messages": 2, "unread_notifications": 1})
+        result = server.get_unread_counts("marktplaats")
+        assert result == {"data": {"unread_messages": 2, "unread_notifications": 1}}
+
+    def test_list_my_messages_passes_args(self, monkeypatch):
+        captured = []
+
+        def fake(site, limit, offset):
+            captured.append((site, limit, offset))
+            return {"conversations": []}
+
+        monkeypatch.setattr(server, "_list_conversations", fake)
+        server.list_my_messages("marktplaats", limit=5, offset=10)
+        assert captured == [("marktplaats", 5, 10)]
+
+    def test_list_my_listings_passes_args(self, monkeypatch):
+        captured = []
+
+        def fake(site, batch_number, batch_size, query):
+            captured.append((site, batch_number, batch_size, query))
+            return {"listings": []}
+
+        monkeypatch.setattr(server, "_list_my_listings", fake)
+        server.list_my_listings("marktplaats", batch_number=2, batch_size=50, query="bike")
+        assert captured == [("marktplaats", 2, 50, "bike")]
+
+    def test_list_my_favorites_passes_args(self, monkeypatch):
+        captured = []
+
+        def fake(site, batch_number):
+            captured.append((site, batch_number))
+            return {"favorites": []}
+
+        monkeypatch.setattr(server, "_list_favorites", fake)
+        server.list_my_favorites("marktplaats", batch_number=3)
+        assert captured == [("marktplaats", 3)]
+
+    def test_list_my_bids_success(self, monkeypatch):
+        self._patch_account(monkeypatch, "_list_bid_favorites",
+                            {"bids": [], "more_available": False})
+        result = server.list_my_bids("marktplaats")
+        assert result["data"]["bids"] == []
+
+    def test_list_native_saved_searches_success(self, monkeypatch):
+        self._patch_account(monkeypatch, "_list_native_saved_searches",
+                            [{"query": "fiets"}])
+        result = server.list_native_saved_searches("marktplaats")
+        assert result["data"][0]["query"] == "fiets"
+
+    def test_not_authenticated_error_returns_needs_auth(self, monkeypatch):
+        from marktplaats_2dehands_mcp.account import NotAuthenticatedError
+
+        self._patch_account(monkeypatch, "_get_unread_counts",
+                            raise_exc=NotAuthenticatedError("No saved session for 'marktplaats'."))
+        result = server.get_unread_counts("marktplaats")
+        assert result["needs_auth"] is True
+        assert "No saved session" in result["error"]
+
+    def test_account_error_surfaces(self, monkeypatch):
+        from marktplaats_2dehands_mcp.account import AccountError
+
+        self._patch_account(monkeypatch, "_get_unread_counts",
+                            raise_exc=AccountError("upstream 500"))
+        result = server.get_unread_counts("marktplaats")
+        assert "error" in result
+        assert "needs_auth" not in result

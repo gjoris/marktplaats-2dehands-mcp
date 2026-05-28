@@ -5,7 +5,17 @@ from typing import Any
 import requests
 from mcp.server.fastmcp import FastMCP
 
+from . import auth as auth_mod
 from . import saved_searches as ss
+from .account import AccountError, NotAuthenticatedError
+from .account import (
+    get_unread_counts as _get_unread_counts,
+    list_bid_favorites as _list_bid_favorites,
+    list_conversations as _list_conversations,
+    list_favorites as _list_favorites,
+    list_my_listings as _list_my_listings,
+    list_native_saved_searches as _list_native_saved_searches,
+)
 from .api import REQUEST_HEADERS, REQUEST_TIMEOUT, SearchError, build_search_params, search
 from .category_fetcher import get_categories
 from .formatting import format_listing
@@ -326,6 +336,121 @@ def check_saved_search(name: str, mark_seen: bool = True) -> dict[str, Any]:
         "new_listings": new_listings,
         "first_check": entry.get("last_checked_at") is None,
     }
+
+
+def _account_call(fn, *args, **kwargs) -> dict[str, Any]:
+    try:
+        return {"data": fn(*args, **kwargs)}
+    except NotAuthenticatedError as e:
+        return {"error": str(e), "needs_auth": True}
+    except AccountError as e:
+        return {"error": str(e)}
+
+
+@mcp.tool()
+def auth_status(site: str = "marktplaats") -> dict[str, Any]:
+    """Check whether a saved login session exists for the given site.
+
+    Returns {"authenticated": bool, "site": str}. Use auth_setup to log in
+    if False.
+    """
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}."}
+    return {"authenticated": auth_mod.is_authenticated(site), "site": site}
+
+
+@mcp.tool()
+def auth_setup(site: str = "marktplaats") -> dict[str, Any]:
+    """Open a browser window so the user can log in once.
+
+    Requires the [auth] extra (Playwright + Chromium). After login, the
+    session cookies are stored at
+    ~/.local/share/marktplaats-2dehands-mcp/auth/storage_state_<site>.json
+    and reused for all subsequent authenticated tool calls.
+
+    The flow:
+      1. A Chromium window opens on the homepage.
+      2. The user clicks "Inloggen" / "Aanmelden" and completes the login.
+      3. The user runs `touch ~/.local/share/marktplaats-2dehands-mcp/auth/done_<site>`
+         in any terminal to confirm.
+      4. The session is captured and saved.
+    """
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}."}
+    try:
+        path = auth_mod.run_login_flow(site)
+    except ImportError as e:
+        return {"error": str(e), "needs_auth_extra": True}
+    except TimeoutError as e:
+        return {"error": str(e)}
+    return {"site": site, "authenticated": True, "storage_state_path": str(path)}
+
+
+@mcp.tool()
+def auth_logout(site: str = "marktplaats") -> dict[str, Any]:
+    """Delete the saved session for the given site."""
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}."}
+    return {"site": site, "removed": auth_mod.clear_session(site)}
+
+
+@mcp.tool()
+def get_unread_counts(site: str = "marktplaats") -> dict[str, Any]:
+    """Return unread message and notification counts for the logged-in user."""
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}."}
+    return _account_call(_get_unread_counts, site)
+
+
+@mcp.tool()
+def list_my_messages(
+    site: str = "marktplaats", limit: int = 20, offset: int = 0
+) -> dict[str, Any]:
+    """List inbox conversations for the logged-in user, newest first."""
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}."}
+    return _account_call(_list_conversations, site, limit, offset)
+
+
+@mcp.tool()
+def list_my_listings(
+    site: str = "marktplaats",
+    batch_number: int = 1,
+    batch_size: int = 20,
+    query: str = "",
+) -> dict[str, Any]:
+    """List the user's own active advertisements with optional query filter."""
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}."}
+    return _account_call(_list_my_listings, site, batch_number, batch_size, query)
+
+
+@mcp.tool()
+def list_my_favorites(site: str = "marktplaats", batch_number: int = 1) -> dict[str, Any]:
+    """List the user's favorited listings."""
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}."}
+    return _account_call(_list_favorites, site, batch_number)
+
+
+@mcp.tool()
+def list_my_bids(site: str = "marktplaats") -> dict[str, Any]:
+    """List items the user has placed bids on."""
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}."}
+    return _account_call(_list_bid_favorites, site)
+
+
+@mcp.tool()
+def list_native_saved_searches(site: str = "marktplaats") -> dict[str, Any]:
+    """List the user's saved searches stored on their marktplaats account.
+
+    This is distinct from the on-disk saved_searches managed by save_search /
+    list_saved_searches — those are local to this MCP server.
+    """
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}."}
+    return _account_call(_list_native_saved_searches, site)
 
 
 def main() -> None:
