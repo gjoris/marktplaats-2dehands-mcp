@@ -369,7 +369,7 @@ def check_saved_search(name: str, mark_seen: bool = True) -> dict[str, Any]:
         return {"error": f"No saved search named {name!r}"}
 
     params = dict(entry["params"])
-    site = params.pop("site")
+    site = params.get("site")
     if site not in SITES:
         return {"error": f"Saved search has unknown site: {site!r}"}
 
@@ -378,42 +378,21 @@ def check_saved_search(name: str, mark_seen: bool = True) -> dict[str, Any]:
     params.setdefault("sort_by", "date")
     params.setdefault("sort_order", "desc")
 
-    try:
-        api_params = build_search_params(
-            query=params.get("query", ""),
-            category=params.get("category"),
-            subcategory=params.get("subcategory"),
-            zip_code=params.get("zip_code", ""),
-            distance_km=params.get("distance_km", 1000),
-            price_from=params.get("price_from"),
-            price_to=params.get("price_to"),
-            condition=params.get("condition"),
-            sort_by=params.get("sort_by", "date"),
-            sort_order=params.get("sort_order", "desc"),
-            limit=params.get("limit", 50),
-            offset=params.get("offset", 0),
-            offered_since_days=params.get("offered_since_days"),
-            attribute_ids=params.get("attribute_ids"),
-        )
-        data = search(site, api_params)
-    except SearchError as e:
-        return {"error": str(e)}
+    result = search_listings(**params)
+    if "error" in result:
+        return result
 
+    listings = result["listings"]
     seen_ids = set(entry.get("seen_ids", []))
-    raw_listings = data.get("listings", [])
-    new_raw = [l for l in raw_listings if l.get("itemId") not in seen_ids]
-
-    new_listings = _make_listings(site, new_raw)
-    if params.get("seller_type"):
-        new_listings = _filter_by_seller_type(new_listings, params["seller_type"])
+    new_listings = [l for l in listings if l.get("id") not in seen_ids]
 
     if mark_seen:
-        ss.record_check(name, [l.get("itemId") for l in raw_listings if l.get("itemId")])
+        ss.record_check(name, [l["id"] for l in listings if l.get("id")])
 
     return {
         "name": name,
         "site": site,
-        "checked_count": len(raw_listings),
+        "checked_count": len(listings),
         "new_count": len(new_listings),
         "new_listings": new_listings,
         "first_check": entry.get("last_checked_at") is None,
