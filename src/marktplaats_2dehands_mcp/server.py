@@ -10,7 +10,7 @@ from mcp.server.fastmcp import FastMCP
 
 from . import saved_searches as ss
 from .api import REQUEST_HEADERS, REQUEST_TIMEOUT, SearchError, build_search_params, search
-from .categories import L1_CATEGORIES, L2_CATEGORIES
+from .category_fetcher import get_categories
 from .formatting import format_listing
 from .sites import SITES, listing_url, seller_url
 
@@ -81,6 +81,7 @@ def search_listings(
 
     try:
         params = build_search_params(
+            site=site,
             query=query,
             category=category,
             subcategory=subcategory,
@@ -248,18 +249,21 @@ def get_seller_info(seller_id: int, site: str = "marktplaats") -> dict[str, Any]
 
 
 @mcp.tool()
-def list_categories() -> dict[str, Any]:
+def list_categories(site: str = "marktplaats") -> dict[str, Any]:
     """List the supported main categories and common subcategories.
 
     Same IDs work on both marktplaats.nl and 2dehands.be.
     """
+    if site not in SITES:
+        return {"error": f"Unknown site: {site!r}. Use 'marktplaats' or '2dehands'."}
+    cats = get_categories(site)
     return {
         "main_categories": [
-            {"name": name.title(), "id": id_} for name, id_ in sorted(L1_CATEGORIES.items())
+            {"name": name.title(), "id": id_} for name, id_ in sorted(cats["l1"].items())
         ],
         "subcategories": [
             {"name": name.title(), "id": info["id"], "parent_id": info["parent"]}
-            for name, info in sorted(L2_CATEGORIES.items())
+            for name, info in sorted(cats["l2"].items())
         ],
         "note": "Use category names (not IDs) in search_listings.",
     }
@@ -278,20 +282,21 @@ def get_category_filters(
         return {"error": "Provide a category or subcategory."}
 
     params: dict[str, Any] = {"limit": "1", "query": ""}
+    cats = get_categories(site)
     if subcategory:
         sub = subcategory.lower()
-        if sub not in L2_CATEGORIES:
+        if sub not in cats["l2"]:
             return {"error": f"Unknown subcategory: {subcategory}"}
-        params["l2CategoryId"] = str(L2_CATEGORIES[sub]["id"])
-        params["l1CategoryId"] = str(L2_CATEGORIES[sub]["parent"])
+        params["l2CategoryId"] = str(cats["l2"][sub]["id"])
+        params["l1CategoryId"] = str(cats["l2"][sub]["parent"])
     else:
         # Both-None already returned above; subcategory is falsy here, so
         # category must be truthy.
         assert category is not None
         cat = category.lower()
-        if cat not in L1_CATEGORIES:
+        if cat not in cats["l1"]:
             return {"error": f"Unknown category: {category}"}
-        params["l1CategoryId"] = str(L1_CATEGORIES[cat])
+        params["l1CategoryId"] = str(cats["l1"][cat])
 
     try:
         data = search(site, params)

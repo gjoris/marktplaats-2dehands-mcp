@@ -5,7 +5,7 @@ from typing import Any
 
 import requests
 
-from .categories import L1_CATEGORIES, L2_CATEGORIES
+from .category_fetcher import get_categories
 from .formatting import CONDITION_MAP, SortBy, SortOrder
 from .sites import search_url
 
@@ -26,6 +26,7 @@ class SearchError(Exception):
 
 def build_search_params(
     *,
+    site: str,
     query: str,
     category: str | None,
     subcategory: str | None,
@@ -53,17 +54,20 @@ def build_search_params(
         "sortOrder": SortOrder[sort_order.upper()].value if sort_order.upper() in SortOrder.__members__ else SortOrder.ASC.value,
     }
 
-    if subcategory:
-        sub = subcategory.lower()
-        if sub not in L2_CATEGORIES:
-            raise SearchError(f"Unknown subcategory: {subcategory}")
-        params["l2CategoryId"] = str(L2_CATEGORIES[sub]["id"])
-        params["l1CategoryId"] = str(L2_CATEGORIES[sub]["parent"])
-    elif category:
-        cat = category.lower()
-        if cat not in L1_CATEGORIES:
-            raise SearchError(f"Unknown category: {category}")
-        params["l1CategoryId"] = str(L1_CATEGORIES[cat])
+    if subcategory or category:
+        cats = get_categories(site)
+        if subcategory:
+            sub = subcategory.lower()
+            if sub not in cats["l2"]:
+                raise SearchError(f"Unknown subcategory: {subcategory}")
+            params["l2CategoryId"] = str(cats["l2"][sub]["id"])
+            params["l1CategoryId"] = str(cats["l2"][sub]["parent"])
+        else:
+            assert category is not None
+            cat = category.lower()
+            if cat not in cats["l1"]:
+                raise SearchError(f"Unknown category: {category}")
+            params["l1CategoryId"] = str(cats["l1"][cat])
 
     if price_from is not None or price_to is not None:
         pf = str(price_from * 100) if price_from is not None else "null"
