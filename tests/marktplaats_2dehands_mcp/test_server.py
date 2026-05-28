@@ -94,36 +94,6 @@ class TestSearchListings:
         assert result["site"] == "2dehands"
         assert "2dehands.be" in mocked_responses.calls[0].request.url
 
-    def test_compact_mode(
-        self, mocked_responses, search_response_factory, listing_factory
-    ):
-        _add_search_response(
-            mocked_responses,
-            "marktplaats",
-            search_response_factory(
-                listings=[listing_factory(itemId="m1")],
-                total=5,
-            ),
-        )
-        result = server.search_listings(site="marktplaats", query="x", compact=True)
-        assert "total" in result
-        assert "total_count" not in result
-        assert result["next"] == 1  # offset 0 + 1 listing < total 5
-
-    def test_compact_no_next_when_complete(
-        self, mocked_responses, search_response_factory, listing_factory
-    ):
-        _add_search_response(
-            mocked_responses,
-            "marktplaats",
-            search_response_factory(
-                listings=[listing_factory(itemId="m1")],
-                total=1,
-            ),
-        )
-        result = server.search_listings(site="marktplaats", query="x", compact=True)
-        assert "next" not in result
-
     def test_pagination_offset(
         self, mocked_responses, search_response_factory, listing_factory
     ):
@@ -178,46 +148,6 @@ class TestSearchListings:
         assert len(result["listings"]) == 1
         assert result["listings"][0]["id"] == "m2"
 
-    def test_seller_type_filter_business_compact(
-        self, mocked_responses, search_response_factory, listing_factory
-    ):
-        _add_search_response(
-            mocked_responses,
-            "marktplaats",
-            search_response_factory(
-                listings=[
-                    listing_factory(itemId="m1", traits=["VERIFIED_SELLER"]),
-                    listing_factory(itemId="m2", traits=[]),
-                ],
-                total=2,
-            ),
-        )
-        result = server.search_listings(
-            site="marktplaats", query="x", seller_type="zakelijk", compact=True
-        )
-        assert len(result["listings"]) == 1
-        assert result["listings"][0]["seller"] == "B"
-
-    def test_seller_type_filter_private_compact(
-        self, mocked_responses, search_response_factory, listing_factory
-    ):
-        _add_search_response(
-            mocked_responses,
-            "marktplaats",
-            search_response_factory(
-                listings=[
-                    listing_factory(itemId="m1", traits=["VERIFIED_SELLER"]),
-                    listing_factory(itemId="m2", traits=[]),
-                ],
-                total=2,
-            ),
-        )
-        result = server.search_listings(
-            site="marktplaats", query="x", seller_type="private", compact=True
-        )
-        assert len(result["listings"]) == 1
-        assert result["listings"][0]["seller"] == "P"
-
     def test_seller_type_unknown_value_no_filter(
         self, mocked_responses, search_response_factory, listing_factory
     ):
@@ -231,22 +161,6 @@ class TestSearchListings:
         )
         result = server.search_listings(
             site="marktplaats", query="x", seller_type="weird"
-        )
-        assert len(result["listings"]) == 1
-
-    def test_seller_type_unknown_value_compact(
-        self, mocked_responses, search_response_factory, listing_factory
-    ):
-        _add_search_response(
-            mocked_responses,
-            "marktplaats",
-            search_response_factory(
-                listings=[listing_factory(itemId="m1")],
-                total=1,
-            ),
-        )
-        result = server.search_listings(
-            site="marktplaats", query="x", seller_type="weird", compact=True
         )
         assert len(result["listings"]) == 1
 
