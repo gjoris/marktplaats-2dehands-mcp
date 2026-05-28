@@ -1,0 +1,61 @@
+"""Category mappings.
+
+Both marktplaats.nl and 2dehands.be share the Adevinta backend and use
+identical L1/L2 category IDs, so a single mapping serves both sites.
+"""
+
+L1_CATEGORIES: dict[str, int] = {
+    "antiek en kunst": 1,
+    "audio, tv en foto": 31,
+    "auto's": 91,
+    "auto-onderdelen": 2600,
+    "auto diversen": 48,
+    "boeken": 201,
+    "caravans en kamperen": 289,
+    "cd's en dvd's": 1744,
+    "computers en software": 322,
+    "contacten en berichten": 378,
+    "diensten en vakmensen": 1098,
+    "dieren en toebehoren": 395,
+    "doe-het-zelf en verbouw": 239,
+    "fietsen en brommers": 445,
+    "hobby en vrije tijd": 1099,
+    "huis en inrichting": 504,
+    "huizen en kamers": 1032,
+    "kinderen en baby's": 565,
+    "kleding | dames": 621,
+    "kleding | heren": 1776,
+    "motoren": 678,
+    "muziek en instrumenten": 728,
+    "postzegels en munten": 1784,
+    "sieraden, tassen en uiterlijk": 1826,
+    "spelcomputers en games": 356,
+    "sport en fitness": 784,
+    "telecommunicatie": 820,
+    "tickets en kaartjes": 1984,
+    "tuin en terras": 1847,
+    "vacatures": 167,
+    "vakantie": 856,
+    "verzamelen": 895,
+    "watersport en boten": 976,
+    "witgoed en apparatuur": 537,
+    "zakelijke goederen": 1085,
+    "diversen": 428,
+}
+
+L2_CATEGORIES: dict[str, dict[str, int]] = {
+    "laptops": {"id": 339, "parent": 322},
+    "desktops": {"id": 340, "parent": 322},
+    "tablets": {"id": 2097, "parent": 322},
+    "fietsen | dames": {"id": 446, "parent": 445},
+    "fietsen | heren": {"id": 447, "parent": 445},
+    "elektrische fietsen": {"id": 1901, "parent": 445},
+    "kinderfietsen": {"id": 449, "parent": 445},
+    "mobiele telefoons": {"id": 821, "parent": 820},
+    "iphone": {"id": 1953, "parent": 820},
+    "samsung": {"id": 1954, "parent": 820},
+    "bmw": {"id": 92, "parent": 91},
+    "volkswagen": {"id": 127, "parent": 91},
+    "audi": {"id": 95, "parent": 91},
+    "mercedes-benz": {"id": 113, "parent": 91},
+}
