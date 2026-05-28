@@ -11,6 +11,13 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "responses>=0.25",
+]
+
 [project.scripts]
 marktplaats-2dehands-mcp = "marktplaats_2dehands_mcp.server:main"
 
@@ -20,3 +27,27 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/marktplaats_2dehands_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--cov=marktplaats_2dehands_mcp",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--cov-branch",
+    "--cov-fail-under=100",
+]
+
+[tool.coverage.run]
+source = ["src/marktplaats_2dehands_mcp"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+show_missing = true
+skip_covered = false
