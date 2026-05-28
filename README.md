@@ -1,5 +1,11 @@
 # marktplaats-2dehands-mcp
 
+[![CI](https://github.com/gjoris/marktplaats-2dehands-mcp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gjoris/marktplaats-2dehands-mcp/actions/workflows/ci.yml)
+[![E2E](https://github.com/gjoris/marktplaats-2dehands-mcp/actions/workflows/e2e.yml/badge.svg?branch=main)](https://github.com/gjoris/marktplaats-2dehands-mcp/actions/workflows/e2e.yml)
+[![Latest release](https://img.shields.io/github/v/release/gjoris/marktplaats-2dehands-mcp?sort=semver)](https://github.com/gjoris/marktplaats-2dehands-mcp/releases)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 An MCP (Model Context Protocol) server that lets AI assistants search
 [marktplaats.nl](https://www.marktplaats.nl) (NL) and
 [2dehands.be](https://www.2dehands.be) (BE) classifieds. Both sites are
