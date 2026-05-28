@@ -1,6 +1,6 @@
 [project]
 name = "marktplaats-2dehands-mcp"
-version = "1.0.0"
+version = "1.1.0"
 description = "MCP server for searching marktplaats.nl and 2dehands.be listings"
 readme = "README.md"
 requires-python = ">=3.10"
