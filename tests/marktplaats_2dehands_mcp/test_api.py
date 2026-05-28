@@ -12,6 +12,7 @@ from marktplaats_2dehands_mcp.api import SearchError
 
 def _kwargs(**overrides):
     base = {
+        "site": "marktplaats",
         "query": "",
         "category": None,
         "subcategory": None,

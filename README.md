@@ -76,6 +76,12 @@ check_saved_search(name="trek-bike-antwerp")
 Saved-search state lives at `~/.local/share/marktplaats-2dehands-mcp/saved_searches.json`
 (override with `MARKTPLAATS_2DEHANDS_STATE_DIR`).
 
+The list of main categories is fetched from the live API on first use and
+cached for 7 days at `~/.cache/marktplaats-2dehands-mcp/categories-{site}.json`
+(override with `MARKTPLAATS_2DEHANDS_CACHE_DIR`). If the API call fails the
+server falls back to a curated built-in mapping, so category lookups keep
+working offline.
+
 ## Anti-bot
 
 The Adevinta `/lrp/api/search` endpoint on `www.marktplaats.nl` and
