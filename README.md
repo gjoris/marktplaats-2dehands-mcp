@@ -14,6 +14,8 @@ server covers both via a `site` parameter.
 
 ## Tools
 
+### Public (no login required)
+
 | Tool | Description |
 | --- | --- |
 | `search_listings` | Keyword + filter search (price, distance, condition, category, seller type, …). |
@@ -25,6 +27,20 @@ server covers both via a `site` parameter.
 | `list_saved_searches` | Show all saved searches with last-checked timestamp. |
 | `delete_saved_search` | Remove a saved search. |
 | `check_saved_search` | Re-run a saved search and return only listings unseen since the last check. |
+
+### Authenticated (require `auth_setup` first; opt-in via the `[auth]` extra)
+
+| Tool | Description |
+| --- | --- |
+| `auth_status` | Whether a saved login session exists for the site. |
+| `auth_setup` | One-time browser-based login flow (needs the `[auth]` extra installed). |
+| `auth_logout` | Forget the saved session. |
+| `get_unread_counts` | Unread message + notification counts. |
+| `list_my_messages` | Inbox conversations, newest first. |
+| `list_my_listings` | The user's own active advertisements. |
+| `list_my_favorites` | The user's favorited listings. |
+| `list_my_bids` | Items the user has placed bids on. |
+| `list_native_saved_searches` | Saved searches stored on the user's marktplaats/2dehands account (distinct from the local `save_search` above). |
 
 ## Installation
 
