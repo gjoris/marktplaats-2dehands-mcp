@@ -198,23 +198,39 @@ class TestGetSellerInfo:
             responses.GET,
             "https://www.marktplaats.nl/v/api/seller-profile/123",
             json={
-                "sellerId": 123,
-                "sellerName": "Alice",
-                "isVerified": True,
-                "averageScore": 4.5,
-                "numberOfReviews": 10,
-                "bankAccountVerified": True,
-                "identificationVerified": False,
-                "phoneNumberVerified": True,
+                "bankAccount": True,
+                "phoneNumber": True,
+                "identification": False,
+                "smbVerified": True,
+                "paymentMethod": {"name": "ideal"},
+                "reviews": [{"averageScore": 4.5, "numberOfReviews": 10}],
             },
             status=200,
         )
         result = server.get_seller_info(seller_id=123, site="marktplaats")
         assert result["id"] == 123
         assert result["site"] == "marktplaats"
-        assert result["name"] == "Alice"
+        assert result["is_business_verified"] is True
         assert result["verification"]["bank_account"] is True
         assert result["verification"]["identification"] is False
+        assert result["verification"]["phone_number"] is True
+        assert result["payment_method"] == "ideal"
+        assert result["average_score"] == 4.5
+        assert result["number_of_reviews"] == 10
+
+    def test_minimal_response_no_reviews_no_payment(self, mocked_responses):
+        mocked_responses.add(
+            responses.GET,
+            "https://www.marktplaats.nl/v/api/seller-profile/123",
+            json={"bankAccount": False, "phoneNumber": False, "identification": False},
+            status=200,
+        )
+        result = server.get_seller_info(seller_id=123, site="marktplaats")
+        assert result["id"] == 123
+        assert result["payment_method"] is None
+        assert result["average_score"] is None
+        assert result["number_of_reviews"] == 0
+        assert result["is_business_verified"] is False
 
     def test_request_failure(self, mocked_responses):
         mocked_responses.add(
