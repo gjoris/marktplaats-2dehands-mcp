@@ -1,17 +1,15 @@
 """MCP server exposing tools for marktplaats.nl and 2dehands.be."""
 
-import json
-import re
 from typing import Any
 
 import requests
-from bs4 import BeautifulSoup
 from mcp.server.fastmcp import FastMCP
 
 from . import saved_searches as ss
 from .api import REQUEST_HEADERS, REQUEST_TIMEOUT, SearchError, build_search_params, search
 from .category_fetcher import get_categories
 from .formatting import format_listing
+from .listing import fetch_listing_details
 from .sites import SITES, listing_url, seller_url
 
 mcp = FastMCP("marktplaats-2dehands")
@@ -123,93 +121,13 @@ def search_listings(
 
 @mcp.tool()
 def get_listing_details(listing_id: str, site: str = "marktplaats") -> dict[str, Any]:
-    """Fetch a listing's full page (HTML) and extract title, price, description, images.
+    """Fetch a listing page and return title, price, description, images, stats.
 
     Args:
         listing_id: e.g. "m2340580395" (the 'm' prefix is added if missing).
         site: "marktplaats" or "2dehands".
     """
-    if site not in SITES:
-        return {"error": f"Unknown site: {site!r}."}
-    if not listing_id:
-        return {"error": "Provide a listing_id."}
-    if not listing_id.startswith("m"):
-        listing_id = f"m{listing_id}"
-
-    headers = {**REQUEST_HEADERS, "Accept": "text/html,application/xhtml+xml"}
-    try:
-        response = requests.get(
-            listing_url(site, listing_id),
-            headers=headers,
-            timeout=REQUEST_TIMEOUT,
-            allow_redirects=True,
-        )
-        response.raise_for_status()
-    except requests.RequestException as e:
-        return {"error": f"Request failed: {e}"}
-
-    if response.status_code == 404 or "niet gevonden" in response.text.lower():
-        return {"error": "Listing not found"}
-
-    soup = BeautifulSoup(response.text, "html.parser")
-    result: dict[str, Any] = {"id": listing_id, "site": site, "url": response.url}
-
-    for script in soup.find_all("script", type="application/ld+json"):
-        try:
-            data = json.loads(script.string or "")
-            if isinstance(data, dict) and data.get("@type") == "Product":
-                result["title"] = data.get("name")
-                result["description_short"] = data.get("description")
-                offers = data.get("offers", {}) or {}
-                result["price"] = f"€ {offers.get('price', 0)}"
-                result["price_cents"] = int(float(offers.get("price", 0)) * 100)
-                images = data.get("image") or []
-                if isinstance(images, str):
-                    images = [images]
-                result["images"] = [
-                    img if img.startswith("http") else "https:" + img for img in images
-                ]
-                result["image_count"] = len(images)
-        except (json.JSONDecodeError, TypeError, ValueError):
-            pass
-
-    text = soup.get_text(separator="|||")
-    if "Beschrijving" in text:
-        parts = text.split("|||")
-        in_desc = False
-        lines: list[str] = []
-        for part in parts:
-            part = part.strip()
-            if not part:
-                continue
-            if part == "Beschrijving":
-                in_desc = True
-                continue
-            if in_desc:
-                if part in ("Kenmerken", "Locatie", "Bied nu", "Bericht", "Vragen aan verkoper"):
-                    break
-                lines.append(part)
-        if lines:
-            result["description_full"] = " ".join(lines)
-
-    views = re.search(r"([\d.]+)x bekeken", text)
-    saved = re.search(r"(\d+)x bewaard", text)
-    since = re.search(r"Sinds (\d+ \w+ '\d+)", text)
-    stats: dict[str, Any] = {}
-    if views:
-        stats["views"] = views.group(1)
-    if saved:
-        stats["saved"] = int(saved.group(1))
-    if since:
-        stats["online_since"] = since.group(1)
-    if stats:
-        result["statistics"] = stats
-
-    location_match = re.search(r"Locatie[^\w]*(\w[\w\s]+?)(?:[\d.]+x bekeken|Toon|Op de kaart)", text)
-    if location_match:
-        result["location"] = location_match.group(1).strip()
-
-    return result
+    return fetch_listing_details(site, listing_id)
 
 
 @mcp.tool()
