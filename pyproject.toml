@@ -29,6 +29,9 @@ packages = ["src/marktplaats_2dehands_mcp"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "e2e: tests that hit the real marktplaats.nl/2dehands.be API (run from e2e/, not tests/)",
+]
 addopts = [
     "--strict-markers",
     "--cov=marktplaats_2dehands_mcp",

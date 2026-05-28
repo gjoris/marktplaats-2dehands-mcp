@@ -132,7 +132,12 @@ def get_listing_details(listing_id: str, site: str = "marktplaats") -> dict[str,
 
 @mcp.tool()
 def get_seller_info(seller_id: int, site: str = "marktplaats") -> dict[str, Any]:
-    """Fetch a seller profile (ratings, verification status, review count)."""
+    """Fetch a seller profile (verification status, payment method, reviews).
+
+    Note: the endpoint does not return seller name/id — those are available
+    from the listing response. It only exposes verification flags, the
+    accepted payment method, and aggregated review stats.
+    """
     if site not in SITES:
         return {"error": f"Unknown site: {site!r}."}
     if not seller_id:
@@ -151,18 +156,21 @@ def get_seller_info(seller_id: int, site: str = "marktplaats") -> dict[str, Any]
     except ValueError:
         return {"error": "Invalid response"}
 
+    reviews = data.get("reviews") or []
+    review_summary = reviews[0] if reviews else {}
+
     return {
-        "id": data.get("sellerId"),
+        "id": seller_id,
         "site": site,
-        "name": data.get("sellerName"),
-        "is_verified": data.get("isVerified", False),
-        "average_score": data.get("averageScore"),
-        "number_of_reviews": data.get("numberOfReviews", 0),
+        "is_business_verified": data.get("smbVerified", False),
         "verification": {
-            "bank_account": data.get("bankAccountVerified", False),
-            "identification": data.get("identificationVerified", False),
-            "phone_number": data.get("phoneNumberVerified", False),
+            "bank_account": data.get("bankAccount", False),
+            "identification": data.get("identification", False),
+            "phone_number": data.get("phoneNumber", False),
         },
+        "payment_method": (data.get("paymentMethod") or {}).get("name"),
+        "average_score": review_summary.get("averageScore"),
+        "number_of_reviews": review_summary.get("numberOfReviews", 0),
     }
 
 
