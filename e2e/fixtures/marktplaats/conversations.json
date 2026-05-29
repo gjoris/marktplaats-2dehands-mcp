@@ -1,0 +1,32 @@
+{
+  "result": {
+    "data": [
+      {
+        "id": "sample-id",
+        "itemId": "m000000000",
+        "title": "Sample title",
+        "otherParticipant": {
+          "userId": 999999,
+          "displayName": "Test User"
+        },
+        "lastMessage": "Sample message body",
+        "lastMessageAt": "2026-05-29T10:00:00Z",
+        "unreadCount": 1,
+        "hasAttachments": false
+      },
+      {
+        "id": "sample-id",
+        "itemId": "m000000000",
+        "title": "Sample title",
+        "otherParticipant": {
+          "userId": 999999,
+          "displayName": "Test User"
+        },
+        "lastMessage": "Sample message body",
+        "lastMessageAt": "2026-05-28T14:32:00Z",
+        "unreadCount": 0,
+        "hasAttachments": true
+      }
+    ]
+  }
+}

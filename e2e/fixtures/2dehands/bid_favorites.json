@@ -1,0 +1,24 @@
+{
+  "favorites": [
+    {
+      "itemId": "m000000000",
+      "title": "Sample title",
+      "pricing": {
+        "label": "Sample label",
+        "type": "min_bid"
+      },
+      "primaryImageUrl": "https://example.com/sample.jpg",
+      "category": {
+        "id": 0,
+        "name": "Sample name"
+      },
+      "myBid": {
+        "amount": 5000,
+        "currency": "EUR",
+        "status": "OPEN"
+      },
+      "vipUrl": "/v/example/m000000000-sample"
+    }
+  ],
+  "moreBidsAvailable": false
+}

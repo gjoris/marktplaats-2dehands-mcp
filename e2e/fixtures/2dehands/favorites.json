@@ -1,0 +1,90 @@
+{
+  "favorites": [
+    {
+      "itemId": "m000000000",
+      "title": "Sample title",
+      "pricing": {
+        "label": "Sample label",
+        "type": "fixed"
+      },
+      "published": true,
+      "bidding": {
+        "allowPlaceBid": false
+      },
+      "primaryImageUrl": "https://example.com/sample.jpg",
+      "category": {
+        "id": 0,
+        "name": "Sample name"
+      },
+      "location": {
+        "label": "Sample label",
+        "type": "city"
+      },
+      "vipUrl": "/v/example/m000000000-sample",
+      "seller": {
+        "name": "Sample name",
+        "asqUrl": "/v/example/m000000000-sample"
+      },
+      "similarAds": []
+    },
+    {
+      "itemId": "m000000000",
+      "title": "Sample title",
+      "pricing": {
+        "label": "Sample label",
+        "type": "fixed"
+      },
+      "published": false,
+      "bidding": {
+        "allowPlaceBid": false
+      },
+      "primaryImageUrl": "https://example.com/sample.jpg",
+      "category": {
+        "id": 0,
+        "name": "Sample name"
+      },
+      "location": {
+        "label": "Sample label",
+        "type": "city"
+      },
+      "vipUrl": "/v/example/m000000000-sample",
+      "seller": {
+        "name": "Sample name",
+        "asqUrl": "/v/example/m000000000-sample"
+      },
+      "similarAds": [
+        {
+          "itemId": "m000000000",
+          "pricing": {
+            "label": "Sample label",
+            "type": "min_bid"
+          },
+          "primaryImageUrl": "https://example.com/sample.jpg",
+          "title": "Sample title",
+          "vipUrl": "/v/example/m000000000-sample"
+        },
+        {
+          "itemId": "m000000000",
+          "pricing": {
+            "label": "Sample label",
+            "type": "fixed"
+          },
+          "primaryImageUrl": "https://example.com/sample.jpg",
+          "title": "Sample title",
+          "vipUrl": "/v/example/m000000000-sample"
+        },
+        {
+          "itemId": "m000000000",
+          "pricing": {
+            "label": "Sample label",
+            "type": "min_bid"
+          },
+          "primaryImageUrl": "https://example.com/sample.jpg",
+          "title": "Sample title",
+          "vipUrl": "/v/example/m000000000-sample"
+        }
+      ]
+    }
+  ],
+  "moreFavoritesAvailable": false
+}

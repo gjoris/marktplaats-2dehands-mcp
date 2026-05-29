@@ -34,6 +34,7 @@ packages = ["src/marktplaats_2dehands_mcp"]
 testpaths = ["tests"]
 markers = [
     "e2e: tests that hit the real marktplaats.nl/2dehands.be API (run from e2e/, not tests/)",
+    "live_auth: e2e tests that need a real authenticated session — auto-skip without storage_state",
 ]
 addopts = [
     "--strict-markers",

@@ -1,0 +1,20 @@
+{
+  "ads": [
+    {
+      "itemId": "m000000000",
+      "title": "Sample title",
+      "priceInfo": {
+        "priceCents": 12345,
+        "priceType": "FIXED"
+      },
+      "categoryId": 0,
+      "status": "ACTIVE",
+      "viewCount": 42,
+      "favoriteCount": 3,
+      "createdAt": "2026-05-01T08:00:00Z",
+      "expiresAt": "2026-06-01T08:00:00Z",
+      "vipUrl": "/v/example/m000000000-sample"
+    }
+  ],
+  "totalNumberOfResults": 1
+}
