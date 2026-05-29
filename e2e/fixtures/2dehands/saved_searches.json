@@ -1,0 +1,16 @@
+[
+  {
+    "id": "sample-id",
+    "name": "Sample name",
+    "url": "/v/example/m000000000-sample",
+    "newAdsCount": 4,
+    "createdAt": "2026-04-15T09:30:00Z"
+  },
+  {
+    "id": "sample-id",
+    "name": "Sample name",
+    "url": "/v/example/m000000000-sample",
+    "newAdsCount": 0,
+    "createdAt": "2026-03-01T18:12:00Z"
+  }
+]
